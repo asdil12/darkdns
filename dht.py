@@ -2,6 +2,7 @@
 
 import hashlib
 import entangled.kademlia.node as kademlia
+from twisted.python import failure
 
 def _hash(key):
 	h = hashlib.sha1()
@@ -20,8 +21,11 @@ class DHT(object):
 
 	def get(self, key):
 		def fetch(result):
-			value = result[_hash(key)]
-			return value
+			try:
+				value = result[_hash(key)]
+				return value
+			except:
+				return failure.Failure("not found")
 		return self.node.iterativeFindValue(_hash(key)).addCallback(fetch)
 
 	def __getitem__(self, key):
