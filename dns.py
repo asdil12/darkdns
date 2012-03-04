@@ -24,18 +24,20 @@ class MapResolver(client.Resolver):
 		self.ttl = 10
 
 	def _dhtlookup(self, name, cls, type, timeout=None):
-		if type in [dns.A, dns.AAAA, dns.CNAME]:
+		if type in [dns.A, dns.AAAA, dns.CNAME, dns.MX]:
 			result = self.mapping[dhtQueryString(name, type)]
 
 			def makeResult(value):
 				print "dht: %s -> %s" % (dhtQueryString(name,type),value)
 				response = dns.RRHeader(name=name, type=type, ttl=10)
 				if type == dns.A:
-					payload = dns.Record_A(value, ttl=10)
+					payload = dns.Record_A(address=value, ttl=10)
 				elif type == dns.AAAA:
-					payload = dns.Record_AAAA(value, ttl=10)
+					payload = dns.Record_AAAA(address=value, ttl=10)
 				elif type == dns.CNAME:
-					payload = dns.Record_CNAME(value, ttl=10)
+					payload = dns.Record_CNAME(name=value, ttl=10)
+				elif type == dns.MX:
+					payload = dns.Record_MX(name=value, ttl=10)
 				response.payload = payload
 				return ([response], [], [])
 
@@ -89,6 +91,12 @@ class MapResolver(client.Resolver):
 		else:
 			return self._lookup(name, dns.IN, dns.CNAME, timeout)
 
+	def lookupMailExchange(self, name, timeout=None):
+		if name in self.mapping:
+			return self._dhtlookup(name, dns.IN, dns.MX, timeout)
+		else:
+			return self._lookup(name, dns.IN, dns.MX, timeout)
+
 # bootstrap dht from 127.0.0.1:4000 and listen on 4444
 mapping = DHTMapping(4444, ('127.0.0.1', 4000))
 
@@ -97,6 +105,7 @@ mapping[dhtQueryString('test.dark', dns.A)] = '1.2.3.4'
 mapping[dhtQueryString('test6.dark', dns.AAAA)] = '2001:7f8:1d14:0:22cf:31ff:fe4c:3213'
 mapping[dhtQueryString('testc.dark', dns.CNAME)] = 'test.dark.'
 mapping[dhtQueryString('testd.dark', dns.CNAME)] = 'testf.dark.'
+mapping[dhtQueryString('testm.dark', dns.MX)] = 'testf.dark.'
 
 # classic dns forward servers
 mr = MapResolver(mapping, [('8.8.8.8', 53), ('8.8.4.4', 53)])
