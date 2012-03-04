@@ -8,7 +8,8 @@ from twisted.python import failure
 
 class DHTMapping(dht.DHT):
 	def __contains__(self, key):
-		return key.lower().endswith('.dark')
+		plainkey = key.lower()
+		return plainkey.endswith('.dark') or plainkey.endswith('d.f.ip6.arpa')
 
 def dhtQueryString(name, type):
 	return "%s %s" % (name.lower().rstrip('.'), dns.QUERY_TYPES[type])
@@ -24,7 +25,7 @@ class MapResolver(client.Resolver):
 		self.ttl = 10
 
 	def _dhtlookup(self, name, cls, type, timeout=None):
-		if type in [dns.A, dns.AAAA, dns.CNAME, dns.MX]:
+		if type in [dns.A, dns.AAAA, dns.CNAME, dns.MX, dns.PTR]:
 			result = self.mapping[dhtQueryString(name, type)]
 
 			def makeResult(value):
@@ -38,6 +39,8 @@ class MapResolver(client.Resolver):
 					payload = dns.Record_CNAME(name=value, ttl=10)
 				elif type == dns.MX:
 					payload = dns.Record_MX(name=value, ttl=10)
+				elif type == dns.PTR:
+					payload = dns.Record_PTR(name=value, ttl=10)
 				response.payload = payload
 				return ([response], [], [])
 
@@ -73,29 +76,26 @@ class MapResolver(client.Resolver):
 		else:
 			return defer.fail(NotImplementedError("MapResolver._dhtlookup: %s record lookup" % dns.QUERY_TYPES[type]))
 
-	def lookupAddress(self, name, timeout=None):
+	def dolookup(self, name, cls, type, timeout=None):
 		if name in self.mapping:
-			return self._dhtlookup(name, dns.IN, dns.A, timeout)
+			return self._dhtlookup(name, dns.IN, type, timeout)
 		else:
-			return self._lookup(name, dns.IN, dns.A, timeout)
+			return self._lookup(name, dns.IN, type, timeout)
+
+	def lookupAddress(self, name, timeout=None):
+		return self.dolookup(name, dns.IN, dns.A, timeout)
 
 	def lookupIPV6Address(self, name, timeout=None):
-		if name in self.mapping:
-			return self._dhtlookup(name, dns.IN, dns.AAAA, timeout)
-		else:
-			return self._lookup(name, dns.IN, dns.AAAA, timeout)
+		return self.dolookup(name, dns.IN, dns.AAAA, timeout)
 
 	def lookupCanonicalName(self, name, timeout=None):
-		if name in self.mapping:
-			return self._dhtlookup(name, dns.IN, dns.CNAME, timeout)
-		else:
-			return self._lookup(name, dns.IN, dns.CNAME, timeout)
+		return self.dolookup(name, dns.IN, dns.CNAME, timeout)
 
 	def lookupMailExchange(self, name, timeout=None):
-		if name in self.mapping:
-			return self._dhtlookup(name, dns.IN, dns.MX, timeout)
-		else:
-			return self._lookup(name, dns.IN, dns.MX, timeout)
+		return self.dolookup(name, dns.IN, dns.MX, timeout)
+
+	def lookupPointer(self, name, timeout=None):
+		return self.dolookup(name, dns.IN, dns.PTR, timeout)
 
 # bootstrap dht from 127.0.0.1:4000 and listen on 4444
 mapping = DHTMapping(4444, ('127.0.0.1', 4000))
@@ -106,6 +106,7 @@ mapping[dhtQueryString('test6.dark', dns.AAAA)] = '2001:7f8:1d14:0:22cf:31ff:fe4
 mapping[dhtQueryString('testc.dark', dns.CNAME)] = 'test.dark.'
 mapping[dhtQueryString('testd.dark', dns.CNAME)] = 'testf.dark.'
 mapping[dhtQueryString('testm.dark', dns.MX)] = 'testf.dark.'
+mapping[dhtQueryString('1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.3.2.3.2.c.2.9.a.7.a.1.2.e.9.d.f.ip6.arpa', dns.PTR)] = 'test7.dark'
 
 # classic dns forward servers
 mr = MapResolver(mapping, [('8.8.8.8', 53), ('8.8.4.4', 53)])

@@ -1,2 +1,3 @@
 - add caching
-- add PTR records
+- add bootstraper
+- add dht content manipulation
