@@ -97,8 +97,8 @@ class MapResolver(client.Resolver):
 	def lookupPointer(self, name, timeout=None):
 		return self.dolookup(name, dns.IN, dns.PTR, timeout)
 
-# bootstrap dht from 127.0.0.1:4000 and listen on 4444
-mapping = DHTMapping(4444, ('127.0.0.1', 4000))
+# bootstrap dht from 127.0.0.1:4000 and listen on 4053
+mapping = DHTMapping(4053, ('127.0.0.1', 4000))
 
 # test hosts
 mapping[dhtQueryString('test.dark', dns.A)] = '1.2.3.4'
