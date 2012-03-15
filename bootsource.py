@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import subprocess, re
+import subprocess, re, dht
+
+def bootstrapList(hosts, port=dht.PORT):
+	return [(host, port) for host in hosts]
 
 def routingTable():
 	rtstring = subprocess.check_output(['netstat', '-rn6'])

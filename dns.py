@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, dht
+import sys, dht, bootsource
 
 from twisted.names import dns, server, client, cache
 from twisted.internet import reactor, error, defer
@@ -98,7 +98,10 @@ class MapResolver(client.Resolver):
 		return self.dolookup(name, dns.IN, dns.PTR, timeout)
 
 # bootstrap dht from 127.0.0.1:4000 and listen on 4053
-mapping = DHTMapping(4053, ('127.0.0.1', 4000))
+knownNodes = [('127.0.0.1', 4000)]
+#twisted bug: there is no ipv6 support yet
+#knownNodes.extend( bootsource.bootstrapList(bootsource.routingTable()) )
+mapping = DHTMapping(dht.PORT, knownNodes)
 
 # test hosts
 mapping[dhtQueryString('test.dark', dns.A)] = '1.2.3.4'

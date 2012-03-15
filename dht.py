@@ -4,17 +4,17 @@ import hashlib
 import entangled.kademlia.node as kademlia
 from twisted.python import failure
 
+PORT=4053
+
 def _hash(key):
 	h = hashlib.sha1()
 	h.update(key)
 	return h.digest()
 
 class DHT(object):
-	def __init__(self, port, knownNode):
-		self.knownNodes = []
-		self.knownNodes.append(knownNode)
+	def __init__(self, port=PORT, knownNodes=[]):
 		self.node = kademlia.Node(udpPort=port)
-		self.node.joinNetwork(self.knownNodes)
+		self.node.joinNetwork(knownNodes)
 
 	def store(self, key, value):
 		return self.node.iterativeStore(_hash(key), value)
